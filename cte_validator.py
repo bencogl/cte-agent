@@ -9,6 +9,11 @@ from parsers import get_listino_parser
 class Log:
     def __init__(self, filename):
         self.filename = filename
+        
+        # Creazione della directory se non esiste
+        log_dir = Path(filename).parent
+        log_dir.mkdir(parents=True, exist_ok=True)
+        
         # Scrivi l'intestazione del file di log
         self.write('File pdf', 'File xls', 'Listino', 'Tipo', 'Descrizione')
 
@@ -23,12 +28,15 @@ class CTEValidator:
         self.xls_folder = Path(xls_folder)
         self.knowledge_file = knowledge_file
         
-        # Crea una directory per i log se non esiste
+        # Percorso del log in /tmp/logs
         log_dir = Path("/tmp/logs")
         log_dir.mkdir(parents=True, exist_ok=True)
-
-        # Crea il file di log
+        
+        # Nome del file di log
         log_file = log_dir / f"{log_file_prefix}{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.csv"
+        print(f"Log file creato in: {log_file}")  # Debug
+        
+        # Creazione del log
         self.log = Log(log_file)
 
     def process_pdfs(self):
