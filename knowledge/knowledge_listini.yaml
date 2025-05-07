@@ -1,165 +1,458 @@
-listini:
-  - codice: CL3PUNHYB
-    descrizione: "Listino 100% indicizzato"
-    riconoscimento:
-      nome_file: ["CL3PUNHYB"]
-      pattern_contenuto: ["100% indicizzato"]
-    campi:
-      - nome: Codice Listino
-        posizione: [0, -1]
-      - nome: Prodotto
-        valore_fisso: "CL3PUNHYB"
-      - nome: Data fine vendibilità
-        posizione: [0, -2]
-      - nome: Codice Offerta
-        posizione: [2, -2]
-      - nome: Prezzo Fisso percentuale
-        valore_fisso: 0
-      - nome: Percentuale prezzo fisso
-        valore_fisso: 0
-      - nome: Fee percentuale senza perdite
-        posizione: [0, -7]
-      - nome: Fee Listino
-        posizione: [0, -6]
+# Configurazione per l'interpretazione dei listini
+# Conversione da rules.py a formato YAML
 
-  - codice: IMPHYBGAS_F1
-    descrizione: "Listino gas fisso"
-    riconoscimento:
-      nome_file: ["IMPHYBGAS", "IMPHYB_V1"]
-      pattern_contenuto: ["prezzo fisso"]
-    campi:
-      - nome: Codice Listino
-        posizione: [0, -1]
-      - nome: Prodotto
-        valore_fisso: "IMPHYBGAS"
-      - nome: Data fine vendibilità
-        posizione: [0, -2]
-      - nome: Codice Offerta
-        posizione: [2, -2]
-      - nome: Prezzo Gas Percentuale
-        posizione: [0, -6]
-      - nome: Percentuale prezzo fisso
-        valore_fisso: 100
-      - nome: Fee Gas Listino
-        posizione: [0, -5]
-      - nome: QVD Fissa Listino
-        formula: "to_num(content[1][-5]) / 12"
+functions:
+  toNum: # Funzione per convertire stringa in numero decimale
+    description: "Converte una stringa numerica formattata in Decimal"
 
-  - codice: IMPHYBGAS_V2
-    descrizione: "Listino gas variabile V2"
-    riconoscimento:
-      nome_file: ["IMPHYBGAS_V2", "IMPHYB_V2"]
-      pattern_contenuto: ["Prezzo PSV + Fee"]
-    campi:
-      - nome: Codice Listino
-        posizione: [0, -1]
-      - nome: Prodotto
-        valore_fisso: "IMPHYBGAS_V2"
-      - nome: Data fine vendibilità
-        posizione: [0, -10]
-      - nome: Codice Offerta
-        posizione: [1, -2]
-      - nome: Prezzo Gas Percentuale
-        valore_fisso: 0
-      - nome: Percentuale prezzo fisso
-        valore_fisso: 0
-      - nome: Fee Gas Percentuale
-        posizione: [0, -7]
-      - nome: Fee Gas Listino
-        posizione: [0, -6]
-      - nome: QVD Fissa Listino
-        posizione: [0, -5]
+interpreters:
+  # Mappature per identificare l'interprete corretto
+  primary_checks:
+    - condition:
+        field: "content[0][-1]" # Controllo sul codice listino nell'ultimo elemento del primo array
+        split_by: "_"
+        length: 3
+        cases:
+          - match: 
+              field_index: 1
+              value: "CL3PUNHYB"
+            interpreter: "read_CL3PUNHYB_V1"
+            description: "100% indicizzato"
+          
+          - match:
+              field_index: 1
+              value: "SMGPSV"
+            interpreter: "read_SMGPSV"
+          
+          - match:
+              field_index: 1
+              value: "IMPHYBGAS"
+              additional_condition: "'all'intero suo fabbisogno, ad un prezzo fisso P pari a:' in content[0][1]"
+            interpreter: "read_IMPHYBGAS_F1"
+          
+          - match:
+              field_index: 1
+              value: "IMPHYBGAS"
+              additional_condition: "'all'intero suo fabbisogno, ad un prezzo fisso P pari a:' in content[0][3]"
+            interpreter: "read_IMPHYBGAS_F1"
+          
+          - match:
+              field_index: 1
+              value: "IMPHYBGAS"
+              additional_condition: "'P = PSV + fee pari a' in content[0][-24]"
+            interpreter: "read_IMPHYBGAS_V3"
+          
+          - match:
+              field_index: 1
+              value: "IMPHYBGAS"
+              additional_condition: "'Prezzo Indicizzato Gas = Prezzo PSV + Fee:' in content[0][10]"
+            interpreter: "read_IMPHYBGAS_V1"
+          
+          - match:
+              field_index: 1
+              value: "IMPHYBGAS"
+              additional_condition: "'P = PSV + fee pari a' in content[0][-21]"
+            interpreter: "read_IMPHYBGAS_V2"
+          
+          - match:
+              field_index: 1
+              value: "IMPHYB"
+              additional_condition: "'Fix' in filename"
+            interpreter: "read_IMPHYB_V4"
+          
+          - match:
+              field_index: 1
+              value: "IMPHYB"
+              additional_condition: "match[0] in ['L1', 'L3', 'L9', 'L11']"
+            interpreter: "read_IMPHYB_V1"
+          
+          - match:
+              field_index: 1
+              value: "IMPHYB"
+            interpreter: "read_IMPHYB_V2"
+          
+          - match:
+              field_index: 1
+              value: "IMPHYB+"
+            interpreter: "read_IMPHYB_V3"
+          
+          - match:
+              field_index: 1
+              value: "IMPPUN"
+            interpreter: "read_IMPPUN"
+  
+  secondary_checks:
+    - condition:
+        field: "content[1][-1]" # Controllo sul codice listino nell'ultimo elemento del secondo array
+        split_by: "_"
+        length: 3
+        cases:
+          - match:
+              field_index: 1
+              value: "NEGVAR"
+            interpreter: "read_NEGVAR"
+          
+          - match:
+              field_index: 1
+              value: "NELVAR"
+            interpreter: "read_NELVAR_V2"
+          
+          - match:
+              field_index: 1
+              value: "NELPUN"
+            interpreter: "read_NELPUN"
+          
+          - match:
+              field_index: 1
+              value: "NEGFIXHYB"
+              additional_condition: "'                   €/Smc (il \"Prezzo Gas\"), applicato ad una percentuale, indicata nella tabella che segue, del gas naturale consumato.' in content[1]"
+            interpreter: "read_NEGFIXHYB_V2"
+            description: "hybrid"
+          
+          - match:
+              field_index: 1
+              value: "NEGFIXHYB"
+            interpreter: "read_NEGFIXHYB_V1"
+            description: "100% fisso"
+          
+          - match:
+              field_index: 1
+              value: "NELFIXHYB"
+            interpreter: "read_NELFIXHYB_V1"
+            description: "100% fisso"
+          
+          - match:
+              field_index: 1
+              value: "NELVAREBUS"
+            interpreter: "read_NELVAREBUS"
+  
+  tertiary_checks:
+    - condition:
+        field: "content[1][-4]" # Controllo sul codice listino nel quarto elemento dal fondo del secondo array
+        split_by: "_"
+        length: 3
+        cases:
+          - match:
+              field_index: 1
+              value: "NELFIXEBUSHYB"
+              additional_condition: "'Il Prezzo Fisso Luce, al netto delle perdite di rete' in content[1][10]"
+            interpreter: "read_NELFIXEBUSHYB_F1"
+  
+  quaternary_checks:
+    - condition:
+        field: "content[1][-2]" # Controllo sul codice listino nel penultimo elemento del secondo array
+        split_by: "_"
+        length: 3
+        cases:
+          - match:
+              field_index: 1
+              value: "NELVAR"
+            interpreter: "read_NELVAR"
+          
+          - match:
+              field_index: 1
+              value: "NELFIXHYB"
+            interpreter: "read_NELFIXHYB_V2"
+            description: "hybrid"
+  
+  special_checks:
+    - condition:
+        special_logic: "len(content[0]) >= 17 and len(match1 := content[0][-17].split('_')) == 3 and len(match2 := content[0][-12].split('_')) == 3"
+        cases:
+          - match:
+              condition: "match1[1] == 'OL1AFIX011119' and match2[1] == 'OL2AFIX011119'"
+            interpreter: "read_OLxAFIX011119"
 
-  - codice: NELFIXHYB_V1
-    descrizione: "Listino luce fissa ibrida V1"
-    riconoscimento:
-      nome_file: ["NELFIXHYB_V1", "NELFIXHYB"]
-      pattern_contenuto: ["fisso", "ibrido"]
-    campi:
-      - nome: Codice Listino
-        posizione: [1, -1]
-      - nome: Prodotto
-        valore_fisso: "NELFIXHYB"
-      - nome: Data fine vendibilità
-        posizione: [1, -15]
-      - nome: Codice Offerta
-        posizione: [3, -1]
-      - nome: Prezzo Fisso percentuale
-        posizione: [1, -14]
-      - nome: Percentuale prezzo fisso
-        valore_fisso: 100
-      - nome: Fee Primo Anno
-        valore_fisso: 0
-      - nome: PCV Fissa Listino
-        posizione: [1, -11]
-      - nome: FeeLuceListino perdite incluse
-        posizione: [1, -2]
+# Definizione dei metodi di interpretazione
+data_extractors:
+  read_OLxAFIX011119:
+    output:
+      - mapping:
+          Codice_Listino: content[0][-17]
+          Prodotto: "OL1AFIX011119"
+          Data_fine_vendibilità: content[0][-1]
+          Codice_Offerta: content[2][-3]
+          Nome_Listino: content[0][-18]
+          Prezzo_Base_FASCE_Listino_F1: toNum(content[0][-16])
+          Prezzo_Base_FASCE_Listino_F2: toNum(content[0][-15])
+          Prezzo_Base_FASCE_Listino_F3: toNum(content[0][-14])
+          Fee_Listino: toNum(content[0][-8])
+      - mapping:
+          Codice_Listino: content[0][-12]
+          Prodotto: "OL2AFIX011119"
+          Data_fine_vendibilità: content[0][-1]
+          Codice_Offerta: content[2][-2]
+          Nome_Listino: content[0][-18]
+          Prezzo_Base_FASCE_Listino_F1: toNum(content[0][-11])
+          Prezzo_Base_FASCE_Listino_F2: toNum(content[0][-11])
+          Prezzo_Base_FASCE_Listino_F3: toNum(content[0][-10])
+          Fee_Listino: toNum(content[0][-7])
 
-  - codice: NELFIXHYB_V2
-    descrizione: "Listino luce fissa ibrida V2"
-    riconoscimento:
-      nome_file: ["NELFIXHYB_V2"]
-      pattern_contenuto: ["fisso", "ibrido"]
-    campi:
-      - nome: Codice Listino
-        posizione: [1, -1]
-      - nome: Prodotto
-        valore_fisso: "NELFIXHYB_V2"
-      - nome: Data fine vendibilità
-        posizione: [1, -15]
-      - nome: Codice Offerta
-        posizione: [3, -1]
-      - nome: Prezzo Fisso percentuale
-        posizione: [1, -14]
-      - nome: Percentuale prezzo fisso
-        valore_fisso: 100
-      - nome: Fee Primo Anno
-        valore_fisso: 0
-      - nome: PCV Fissa Listino
-        posizione: [1, -11]
-      - nome: FeeLuceListino perdite incluse
-        posizione: [1, -2]
+  read_IMPHYBGAS_F1:
+    output:
+      - mapping:
+          Codice_Listino: content[0][-1]
+          Prodotto: "IMPHYBGAS"
+          Data_fine_vendibilità: content[0][-2]
+          Codice_Offerta: content[2][-2]
+          Prezzo_Gas_Percentuale: toNum(content[0][-6])
+          Percentuale_prezzo_fisso: 100
+          Fee_Gas_Percentuale: 0
+          Fee_Gas_Listino: toNum(content[0][-5])
+          QVD_Fissa_Listino: toNum(content[1][-5])/12
 
-  - codice: NELVAR_V1
-    descrizione: "Listino variabile V1"
-    riconoscimento:
-      nome_file: ["NELVAR_V1"]
-    campi:
-      - nome: Codice Listino
-        posizione: [0, -1]
-      - nome: Prodotto
-        valore_fisso: "NELVAR_V1"
-      - nome: Data fine vendibilità
-        posizione: [0, -10]
-      - nome: Codice Offerta
-        posizione: [1, -2]
-      - nome: Prezzo Base FASCE Listino|F1
-        posizione: [0, -9]
-      - nome: Prezzo Base FASCE Listino|F2
-        posizione: [0, -8]
-      - nome: Prezzo Base FASCE Listino|F3
-        posizione: [0, -7]
-      - nome: Fee Listino
-        posizione: [0, -4]
+  read_IMPHYBGAS_V3:
+    output:
+      - mapping:
+          Codice_Listino: content[0][-1]
+          Prodotto: "IMPHYBGAS"
+          Data_fine_vendibilità: content[0][-2]
+          Codice_Offerta: content[2][-2]
+          Prezzo_Gas_Percentuale: 0
+          Percentuale_prezzo_fisso: 0
+          Fee_Gas_Percentuale: toNum(content[0][-6])
+          Fee_Gas_Listino: toNum(content[0][-5])
+          QVD_Fissa_Listino: toNum(content[1][-5])/12
 
-  - codice: OLxAFIX011119
-    descrizione: "Listino fisso con fasce"
-    riconoscimento:
-      nome_file: ["OL1AFIX", "OL2AFIX", "OLxAFIX011119"]
-    campi:
-      - nome: Codice Listino
-        posizione: [0, -17]
-      - nome: Prodotto
-        valore_fisso: "OLxAFIX011119"
-      - nome: Data fine vendibilità
-        posizione: [0, -1]
-      - nome: Codice Offerta
-        posizione: [2, -3]
-      - nome: Prezzo Base FASCE Listino|F1
-        posizione: [0, -16]
-      - nome: Prezzo Base FASCE Listino|F2
-        posizione: [0, -15]
-      - nome: Prezzo Base FASCE Listino|F3
-        posizione: [0, -14]
-      - nome: Fee Listino
-        posizione: [0, -8]
+  read_IMPHYBGAS_V1:
+    output:
+      - mapping:
+          Codice_Listino: content[0][-1]
+          Prodotto: "IMPHYBGAS"
+          Data_fine_vendibilità: content[0][-10]
+          Codice_Offerta: content[1][-2]
+          Prezzo_Gas_Percentuale: 0
+          Percentuale_prezzo_fisso: 0
+          Fee_Gas_Percentuale: toNum(content[0][-7])
+          Fee_Gas_Listino: toNum(content[0][-6])
+          QVD_Fissa_Listino: toNum(content[0][-5])
+
+  read_IMPHYBGAS_V2:
+    output:
+      - mapping:
+          Codice_Listino: content[0][-1]
+          Prodotto: "IMPHYBGAS"
+          Data_fine_vendibilità: content[0][-2]
+          Codice_Offerta: content[2][-2]
+          Prezzo_Gas_Percentuale: 0
+          Percentuale_prezzo_fisso: 0
+          Fee_Gas_Percentuale: toNum(content[0][-6])
+          Fee_Gas_Listino: toNum(content[0][-5])
+          QVD_Fissa_Listino: toNum(content[1][-5])/12
+
+  read_IMPPUN:
+    output:
+      - mapping:
+          Codice_Listino: content[0][-1]
+          Prodotto: "IMPPUN"
+          Data_fine_vendibilità: content[0][-19]
+          Codice_Offerta: content[2][-2]
+          FeeMISURATORE_PrimoAnno_F1: toNum(content[0][-18])
+          FeeMISURATORE_PrimoAnno_F2: toNum(content[0][-17])
+          FeeMISURATORE_PrimoAnno_F3: toNum(content[0][-16])
+          FeeMISURATORE_PrimoAnno_Totale: toNum(content[0][-15])
+          FeeMISURATORE_SecondoAnno_F1: toNum(content[0][-12])
+          FeeMISURATORE_SecondoAnno_F2: toNum(content[0][-11])
+          FeeMISURATORE_SecondoAnno_F3: toNum(content[0][-10])
+          FeeMISURATORE_SecondoAnno_Totale: toNum(content[0][-9])
+          PCV_Fissa_Listino: toNum(content[0][-8])
+
+  read_NELVAR:
+    output:
+      - mapping:
+          Codice_Listino: content[1][-2]
+          Prodotto: "NELVAR"
+          Data_fine_vendibilità: content[1][-14]
+          Codice_Offerta: content[3][-1]
+          PCV_Fissa_Listino: toNum(content[1][-9])
+          Fee_Listino_PrimoAnno: toNum(content[1][-11])
+          FeeLuceListino_perdite_incluse: toNum(content[1][-1])
+  
+  read_NELVAR_V2:
+    output:
+      - mapping:
+          Codice_Listino: content[1][-1]
+          Prodotto: "NELVAR"
+          Data_fine_vendibilità: content[1][-14]
+          Codice_Offerta: content[3][-1]
+          PCV_Fissa_Listino: toNum(content[1][-9])
+          Fee_Listino_PrimoAnno: toNum(content[1][-11])
+          FeeLuceListino_perdite_incluse: toNum(content[1][-2])
+
+  read_NELVAREBUS:
+    output:
+      - mapping:
+          Codice_Listino: content[1][-1]
+          Prodotto: "NELVAREBUS"
+          Data_fine_vendibilità: content[1][-14]
+          Codice_Offerta: content[3][-4]
+          PCV_Fissa_Listino: toNum(content[1][-9])
+          Fee_Listino_PrimoAnno: toNum(content[1][-11])
+          FeeLuceListino_perdite_incluse: toNum(content[1][-2])
+
+  read_NEGVAR:
+    output:
+      - mapping:
+          Codice_Listino: content[1][-1]
+          Prodotto: "NEGVAR"
+          Data_fine_vendibilità: content[1][-11]
+          Codice_Offerta: content[2][-7]
+          QVD_Fissa_Listino: toNum(content[1][-5])
+          Fee_Gas_Listino_PrimoAnno: toNum(content[1][-8])
+          Fee_Gas_Listino: toNum(content[1][-7])
+
+  read_CL3PUNHYB_V1:
+    output:
+      - mapping:
+          Codice_Listino: content[0][-1]
+          Prodotto: "CL3PUNHYB"
+          Data_fine_vendibilità: content[0][-2]
+          Codice_Offerta: content[2][-2]
+          Nome_Listino: content[0][-8]
+          Prezzo_Fisso_percentuale: 0
+          Percentuale_prezzo_fisso: 0
+          Fee_percentuale_senza_perdite: toNum(content[0][-7])
+          Fee_Listino: toNum(content[0][-6])
+
+  read_SMGPSV:
+    output:
+      - mapping:
+          Codice_Listino: content[0][-1]
+          Prodotto: "SMGPSV"
+          Data_fine_vendibilità: content[0][-2]
+          Codice_Offerta: content[2][-2]
+          Nome_Listino: toNum(content[0][-7])
+          Fee_Gas_Listino_PrimoAnno: toNum(content[0][-6])
+          Fee_Gas_Listino: toNum(content[0][-5])
+          QVD_Fissa_Listino: "Non so"
+
+  read_IMPHYB_V1:
+    output:
+      - mapping:
+          Codice_Listino: content[0][-1]
+          Prodotto: "IMPHYB"
+          Data_fine_vendibilità: content[0][-18]
+          Codice_Offerta: content[2][-2]
+          Prezzo_Fisso_percentuale: toNum(content[0][-17])
+          Percentuale_prezzo_fisso: toNum(content[0][-11][:-1])
+          Fee_Primo_Anno: toNum(content[0][-12])
+          FeeLuceListino_perdite_incluse: toNum(content[0][-7])
+          PCV_Fissa_Listino: toNum(content[0][-9])/12
+
+  read_IMPHYB_V2:
+    output:
+      - mapping:
+          Codice_Listino: content[0][-1]
+          Prodotto: "IMPHYB"
+          Data_fine_vendibilità: content[0][-18]
+          Codice_Offerta: content[2][-2]
+          Prezzo_Fisso_percentuale: toNum(content[0][-17])
+          Percentuale_prezzo_fisso: toNum(content[0][-10][:-1])
+          Fee_Primo_Anno: toNum(content[0][-11])
+          FeeLuceListino_perdite_incluse: toNum(content[0][-7])
+          PCV_Fissa_Listino: toNum(content[0][-8])/12
+
+  read_IMPHYB_V3:
+    output:
+      - mapping:
+          Codice_Listino: content[0][-1]
+          Prodotto: "IMPHYB+"
+          Data_fine_vendibilità: content[0][-19]
+          Codice_Offerta: content[2][-2]
+          Prezzo_Fisso_percentuale: toNum(content[0][-18])
+          Percentuale_prezzo_fisso: toNum(content[0][-11][:-1])
+          Fee_Primo_Anno: toNum(content[0][-12])
+          FeeLuceListino_perdite_incluse: toNum(content[0][-7])
+          PCV_Fissa_Listino: toNum(content[0][-9])
+
+  read_IMPHYB_V4:
+    output:
+      - mapping:
+          Codice_Listino: content[0][-1]
+          Prodotto: "IMPHYB"
+          Data_fine_vendibilità: content[0][-14]
+          Codice_Offerta: content[1][-2]
+          Prezzo_Fisso_percentuale: toNum(content[0][-13])
+          Percentuale_prezzo_fisso: 100
+          Fee_Primo_Anno: 0
+          FeeLuceListino_perdite_incluse: toNum(content[0][-8])
+          PCV_Fissa_Listino: toNum(content[0][-11])/12
+
+  read_NELPUN:
+    output:
+      - mapping:
+          Codice_Listino: content[1][-1]
+          Prodotto: "NELPUN"
+          Data_fine_vendibilità: content[1][-14]
+          Codice_Offerta: content[3][-1]
+          Fee_Listino_PrimoAnno: toNum(content[1][-11])
+          FeeLuceListino_perdite_incluse: toNum(content[1][-2])
+          PCV_Fissa_Listino: toNum(content[1][-9])
+
+  read_NEGFIXHYB_V1:
+    output:
+      - mapping:
+          Codice_Listino: content[1][-1]
+          Prodotto: "NEGFIXHYB"
+          Data_fine_vendibilità: content[1][-9]
+          Codice_Offerta: content[2][-7]
+          Prezzo_Gas_Percentuale: toNum(content[1][-8])
+          Percentuale_prezzo_fisso: 100
+          Fee_Gas_Percentuale: 0
+          Fee_Gas_Listino: toNum(content[1][-5])
+          QVD_Fissa_Listino: toNum(content[1][-6])
+
+  read_NEGFIXHYB_V2:
+    output:
+      - mapping:
+          Codice_Listino: content[1][-1]
+          Prodotto: "NEGFIXHYB"
+          Data_fine_vendibilità: content[1][-14]
+          Codice_Offerta: content[2][-7]
+          Prezzo_Gas_Percentuale: toNum(content[1][-13])
+          Percentuale_prezzo_fisso: toNum(content[1][-7][:-1])
+          Fee_Gas_Percentuale: toNum(content[1][-10])
+          Fee_Gas_Listino: toNum(content[1][-5])
+          QVD_Fissa_Listino: toNum(content[1][-8])
+
+  read_NELFIXHYB_V1:
+    output:
+      - mapping:
+          Codice_Listino: content[1][-1]
+          Prodotto: "NELFIXHYB"
+          Data_fine_vendibilità: content[1][-15]
+          Codice_Offerta: content[3][-1]
+          Prezzo_Fisso_percentuale: toNum(content[1][-14])
+          Percentuale_prezzo_fisso: 100
+          Fee_Primo_Anno: 0
+          PCV_Fissa_Listino: toNum(content[1][-11])
+          FeeLuceListino_perdite_incluse: toNum(content[1][-2])
+
+  read_NELFIXHYB_V2:
+    output:
+      - mapping:
+          Codice_Listino: content[1][-2]
+          Prodotto: "NELFIXHYB"
+          Data_fine_vendibilità: content[1][-20]
+          Codice_Offerta: content[3][-1]
+          Prezzo_Fisso_percentuale: toNum(content[1][-19])
+          Percentuale_prezzo_fisso: toNum(content[1][-12][:-1])
+          Fee_Primo_Anno: toNum(content[1][-13])
+          PCV_Fissa_Listino: toNum(content[1][-9])
+          FeeLuceListino_perdite_incluse: toNum(content[1][-1])
+
+  read_NELFIXEBUSHYB_F1:
+    output:
+      - mapping:
+          Codice_Listino: content[1][-4]
+          Prodotto: "NELFIXEBUSHYB"
+          Data_fine_vendibilità: content[1][-21]
+          Codice_Offerta: content[3][-4]
+          Percentuale_prezzo_fisso: 100
+          PrezzoMisuratore_percentuale_F1: toNum(content[1][-20])
+          PrezzoMisuratore_percentuale_F2: toNum(content[1][-19])
+          PrezzoMisuratore_percentuale_F3: toNum(content[1][-18])
+          PrezzoMisuratore_percentuale_Totale: toNum(content[1][-17])
+          Fee_Primo_Anno: 0
+          PCV_Fissa_Listino: toNum(content[1][-11])
+          FeeLuceListino_perdite_incluse: toNum(content[1][-1])
