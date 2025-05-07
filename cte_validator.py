@@ -80,11 +80,11 @@ class CTEValidator:
             
             # Log del successo
                 self.log.write(xls_file=xls_file.name, tipo='Elaborazione', desc='Processato con successo')
-        
-        except Exception as e:
-            self.log.write(xls_file=xls_file.name, tipo='Errore', desc=str(e))
+            
+            except Exception as e:
+                self.log.write(xls_file=xls_file.name, tipo='Errore', desc=str(e))
     
-    return xls_data
+        return xls_data
 
 
     def run(self):
