@@ -58,29 +58,28 @@ class CTEValidator:
         return pdf_data
 
     def process_excels(self):
-    xls_data = {}
-    for xls_file in self.xls_folder.rglob("*.xlsx"):
-        try:
-            print(f"Processing {xls_file.name}...")
-            # Estrazione dei dati come lista di dizionari
-            data_list = extract_from_excel(xls_file)
+        xls_data = {}
+        for xls_file in self.xls_folder.rglob("*.xlsx"):
+            try:
+                print(f"Processing {xls_file.name}...")
+                # Estrazione dei dati come dizionario
+                data_dict = extract_from_excel(xls_file)
             
-            # Verifica che data_list sia effettivamente una lista
-            if not isinstance(data_list, list):
-                raise ValueError(f"Formato non valido per {xls_file.name}, attesa una lista di dizionari")
+            # Verifica che data_dict sia effettivamente un dizionario
+                if not isinstance(data_dict, dict):
+                    raise ValueError(f"Formato non valido per {xls_file.name}, atteso un dizionario")
             
-            # Inserisce ogni dizionario in xls_data usando il Codice Listino come chiave
-            for data in data_list:
-                codice_listino = data.get('Codice Listino', "")
-                if not codice_listino:
-                    raise ValueError(f"Il file {xls_file.name} non contiene 'Codice Listino'")
+            # Inserisce ogni entry in xls_data usando il Codice Listino come chiave
+                for codice_listino, data in data_dict.items():
+                    if not codice_listino:
+                        raise ValueError(f"Il file {xls_file.name} non contiene 'Codice Listino'")
                 
                 # Aggiungi il nome del file ai dati
-                data['filename'] = xls_file.name
-                xls_data[codice_listino] = data
+                    data['filename'] = xls_file.name
+                    xls_data[codice_listino] = data
             
             # Log del successo
-            self.log.write(xls_file=xls_file.name, tipo='Elaborazione', desc='Processato con successo')
+                self.log.write(xls_file=xls_file.name, tipo='Elaborazione', desc='Processato con successo')
         
         except Exception as e:
             self.log.write(xls_file=xls_file.name, tipo='Errore', desc=str(e))
