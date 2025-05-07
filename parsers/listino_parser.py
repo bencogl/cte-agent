@@ -1,4 +1,9 @@
 from decimal import Decimal as D
+import yaml
+
+def load_listino_templates(knowledge_file):
+    with open(knowledge_file, "r") as f:
+        return yaml.safe_load(f)
 
 def to_num(s):
     return D(s.replace('.', '').replace(',', '.'))
