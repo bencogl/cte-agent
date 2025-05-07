@@ -1,21 +1,3 @@
-import csv
-import datetime
-from pathlib import Path
-from pdf_utils import extract_from_pdf
-from excel_utils import extract_from_excel
-from parsers import get_listino_parser
-
-class Log:
-    def __init__(self, filename):
-        self.filename = filename
-        self.write('File pdf', 'File xls', 'Listino', 'Tipo', 'Descrizione')
-
-    def write(self, pdf_file=None, xls_file=None, listino=None, tipo=None, desc=None):
-        with open(self.filename, 'a', newline='') as f:
-            writer = csv.writer(f, delimiter=';')
-            writer.writerow((pdf_file, xls_file, listino, tipo, desc))
-
-
 class CTEValidator:
     def __init__(self, pdf_folder, xls_folder, knowledge_file, log_file_prefix):
         self.pdf_folder = Path(pdf_folder)
@@ -41,6 +23,18 @@ class CTEValidator:
                 self.log.write(pdf_file=pdf_file.name, tipo='Errore', desc=str(e))
         return pdf_data
 
+    def process_excels(self):
+        xls_data = {}
+        for xls_file in self.xls_folder.rglob("*.xlsx"):
+            try:
+                print(f"Processing {xls_file.name}...")
+                data = extract_from_excel(xls_file)
+                data['filename'] = xls_file.name
+                xls_data[data['Codice Listino']] = data
+                self.log.write(xls_file=xls_file.name, tipo='Elaborazione', desc='Processato con successo')
+            except Exception as e:
+                self.log.write(xls_file=xls_file.name, tipo='Errore', desc=str(e))
+        return xls_data
 
     def run(self):
         pdf_data = self.process_pdfs()
@@ -63,4 +57,3 @@ class CTEValidator:
                 self.log.write(pdf_entry['filename'], xls_entry['filename'], listino, 'Errore', f'Differenze: {diffs}')
             else:
                 self.log.write(pdf_entry['filename'], xls_entry['filename'], listino, 'Elaborazione', 'Coerenza verificata')
-
