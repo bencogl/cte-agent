@@ -1,5 +1,6 @@
 from decimal import Decimal as D
 import yaml
+import re
 
 def load_listino_templates(knowledge_file):
     with open(knowledge_file, "r") as f:
@@ -8,11 +9,20 @@ def load_listino_templates(knowledge_file):
 def to_num(s):
     return D(s.replace('.', '').replace(',', '.'))
 
-def get_listino_parser(filename, content, knowledge_file="knowledge/knowledge_listini.yaml"):
+
+def get_listino_parser(filename, content, knowledge_file):
     templates = load_listino_templates(knowledge_file)
+    
     for template in templates:
-        if template.match(filename, content):
-            return template
+        # Verifica se il nome del file corrisponde a uno dei pattern
+        for nome_file in template['riconoscimento']['nome_file']:
+            if nome_file in filename:
+                # Verifica se uno dei pattern di contenuto corrisponde
+                for pattern in template['riconoscimento']['pattern_contenuto']:
+                    if re.search(pattern, content):
+                        return template
+    
+    # Nessun template trovato
     return None
 
 class ListinoParser:
