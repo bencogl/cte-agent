@@ -6,3 +6,4 @@ openpyxl==3.1.2
 python-multipart==0.0.6
 pydantic==2.4.2
 requests==2.31.0
+pypdf==3.16.0
