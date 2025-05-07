@@ -25,7 +25,7 @@ listini:
   - codice: IMPHYBGAS_F1
     descrizione: "Listino gas fisso"
     riconoscimento:
-      nome_file: ["IMPHYBGAS"]
+      nome_file: ["IMPHYBGAS", "IMPHYB_V1"]
       pattern_contenuto: ["prezzo fisso"]
     campi:
       - nome: Codice Listino
@@ -45,16 +45,16 @@ listini:
       - nome: QVD Fissa Listino
         formula: "to_num(content[1][-5]) / 12"
 
-  - codice: IMPHYBGAS_V1
-    descrizione: "Listino gas variabile"
+  - codice: IMPHYBGAS_V2
+    descrizione: "Listino gas variabile V2"
     riconoscimento:
-      nome_file: ["IMPHYBGAS"]
+      nome_file: ["IMPHYBGAS_V2", "IMPHYB_V2"]
       pattern_contenuto: ["Prezzo PSV + Fee"]
     campi:
       - nome: Codice Listino
         posizione: [0, -1]
       - nome: Prodotto
-        valore_fisso: "IMPHYBGAS"
+        valore_fisso: "IMPHYBGAS_V2"
       - nome: Data fine vendibilità
         posizione: [0, -10]
       - nome: Codice Offerta
@@ -71,9 +71,9 @@ listini:
         posizione: [0, -5]
 
   - codice: NELFIXHYB_V1
-    descrizione: "Listino luce fissa ibrida"
+    descrizione: "Listino luce fissa ibrida V1"
     riconoscimento:
-      nome_file: ["NELFIXHYB"]
+      nome_file: ["NELFIXHYB_V1", "NELFIXHYB"]
       pattern_contenuto: ["fisso", "ibrido"]
     campi:
       - nome: Codice Listino
@@ -95,15 +95,62 @@ listini:
       - nome: FeeLuceListino perdite incluse
         posizione: [1, -2]
 
-  - codice: OLxAFIX011119
-    descrizione: "Listino OLxAFIX"
+  - codice: NELFIXHYB_V2
+    descrizione: "Listino luce fissa ibrida V2"
     riconoscimento:
-      nome_file: ["OL1AFIX", "OL2AFIX"]
+      nome_file: ["NELFIXHYB_V2"]
+      pattern_contenuto: ["fisso", "ibrido"]
+    campi:
+      - nome: Codice Listino
+        posizione: [1, -1]
+      - nome: Prodotto
+        valore_fisso: "NELFIXHYB_V2"
+      - nome: Data fine vendibilità
+        posizione: [1, -15]
+      - nome: Codice Offerta
+        posizione: [3, -1]
+      - nome: Prezzo Fisso percentuale
+        posizione: [1, -14]
+      - nome: Percentuale prezzo fisso
+        valore_fisso: 100
+      - nome: Fee Primo Anno
+        valore_fisso: 0
+      - nome: PCV Fissa Listino
+        posizione: [1, -11]
+      - nome: FeeLuceListino perdite incluse
+        posizione: [1, -2]
+
+  - codice: NELVAR_V1
+    descrizione: "Listino variabile V1"
+    riconoscimento:
+      nome_file: ["NELVAR_V1"]
+    campi:
+      - nome: Codice Listino
+        posizione: [0, -1]
+      - nome: Prodotto
+        valore_fisso: "NELVAR_V1"
+      - nome: Data fine vendibilità
+        posizione: [0, -10]
+      - nome: Codice Offerta
+        posizione: [1, -2]
+      - nome: Prezzo Base FASCE Listino|F1
+        posizione: [0, -9]
+      - nome: Prezzo Base FASCE Listino|F2
+        posizione: [0, -8]
+      - nome: Prezzo Base FASCE Listino|F3
+        posizione: [0, -7]
+      - nome: Fee Listino
+        posizione: [0, -4]
+
+  - codice: OLxAFIX011119
+    descrizione: "Listino fisso con fasce"
+    riconoscimento:
+      nome_file: ["OL1AFIX", "OL2AFIX", "OLxAFIX011119"]
     campi:
       - nome: Codice Listino
         posizione: [0, -17]
       - nome: Prodotto
-        valore_fisso: "OL1AFIX011119"
+        valore_fisso: "OLxAFIX011119"
       - nome: Data fine vendibilità
         posizione: [0, -1]
       - nome: Codice Offerta
@@ -116,24 +163,3 @@ listini:
         posizione: [0, -14]
       - nome: Fee Listino
         posizione: [0, -8]
-
-  - codice: NELVAR
-    descrizione: "Listino a prezzo variabile"
-    riconoscimento:
-      nome_file: ["NELVAR"]
-      pattern_contenuto: ["variabile"]
-    campi:
-      - nome: Codice Listino
-        posizione: [1, -1]
-      - nome: Prodotto
-        valore_fisso: "NELVAR"
-      - nome: Data fine vendibilità
-        posizione: [1, -14]
-      - nome: Codice Offerta
-        posizione: [3, -1]
-      - nome: PCV Fissa Listino
-        posizione: [1, -9]
-      - nome: Fee Listino PrimoAnno
-        posizione: [1, -11]
-      - nome: FeeLuceListino perdite incluse
-        posizione: [1, -2]
