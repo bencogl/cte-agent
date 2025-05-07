@@ -4,6 +4,7 @@ def format_differences(diffs):
     
     messages = []
     for listino, changes in diffs.items():
+        # Gestione errori noti
         if changes == "missing_pdf":
             messages.append(f"⚠️ Il listino `{listino}` è presente nel tracciato Excel ma manca nel PDF.")
         elif changes == "missing_xls":
@@ -12,8 +13,14 @@ def format_differences(diffs):
             messages.append(f"⚠️ Il listino `{listino}` è duplicato e non è stato elaborato.")
         elif isinstance(changes, str) and changes.startswith("error"):
             messages.append(f"❌ Errore durante l'elaborazione del listino `{listino}`: {changes[7:]}")
-        else:
+        
+        # Gestione differenze (solo se è un dizionario)
+        elif isinstance(changes, dict):
             changes_text = "\n".join([f"  - `{field}`: PDF = {pdf_val}, Excel = {xls_val}" for field, (pdf_val, xls_val) in changes.items()])
             messages.append(f"⚠️ Differenze trovate nel listino `{listino}`:\n{changes_text}")
+        
+        # Gestione casi non previsti
+        else:
+            messages.append(f"❌ Formato non riconosciuto per il listino `{listino}`: {changes}")
 
     return "\n\n".join(messages)
