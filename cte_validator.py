@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import csv
 import datetime
@@ -21,9 +22,15 @@ class CTEValidator:
         self.pdf_folder = Path(pdf_folder)
         self.xls_folder = Path(xls_folder)
         self.knowledge_file = knowledge_file
-        # Usa la classe Log per creare il file di log
-        self.log = Log(f"{log_file_prefix}{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.csv")
-    
+        
+        # Crea una directory per i log se non esiste
+        log_dir = Path("/tmp/logs")
+        log_dir.mkdir(parents=True, exist_ok=True)
+
+        # Crea il file di log
+        log_file = log_dir / f"{log_file_prefix}{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.csv"
+        self.log = Log(log_file)
+
     def process_pdfs(self):
         pdf_data = {}
         for pdf_file in self.pdf_folder.rglob("*.pdf"):
@@ -32,7 +39,7 @@ class CTEValidator:
                 content = extract_from_pdf(pdf_file)
                 template = get_listino_parser(pdf_file.name, content, self.knowledge_file)
                 if template is None:
-                    self.log.write(pdf_file=pdf_file.name, tipo='Errore', desc='Template non trovato')
+                    self.log.write(pdf_file.name, tipo='Errore', desc='Template non trovato')
                     continue
                 data = template.parse(content)
                 data['filename'] = pdf_file.name
