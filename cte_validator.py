@@ -1,7 +1,6 @@
 from pathlib import Path
 import csv
 import datetime
-from pathlib import Path
 from pdf_utils import extract_from_pdf
 from excel_utils import extract_from_excel
 from parsers import get_listino_parser
@@ -9,20 +8,21 @@ from parsers import get_listino_parser
 class Log:
     def __init__(self, filename):
         self.filename = filename
+        # Scrivi l'intestazione del file di log
         self.write('File pdf', 'File xls', 'Listino', 'Tipo', 'Descrizione')
+
+    def write(self, pdf_file=None, xls_file=None, listino=None, tipo=None, desc=None):
+        with open(self.filename, 'a', newline='') as f:
+            writer = csv.writer(f, delimiter=';')
+            writer.writerow((pdf_file, xls_file, listino, tipo, desc))
 
 class CTEValidator:
     def __init__(self, pdf_folder, xls_folder, knowledge_file, log_file_prefix):
         self.pdf_folder = Path(pdf_folder)
         self.xls_folder = Path(xls_folder)
         self.knowledge_file = knowledge_file
+        # Usa la classe Log per creare il file di log
         self.log = Log(f"{log_file_prefix}{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.csv")
-
-
-    def write(self, pdf_file=None, xls_file=None, listino=None, tipo=None, desc=None):
-        with open(self.filename, 'a', newline='') as f:
-            writer = csv.writer(f, delimiter=';')
-            writer.writerow((pdf_file, xls_file, listino, tipo, desc))
     
     def process_pdfs(self):
         pdf_data = {}
@@ -32,7 +32,7 @@ class CTEValidator:
                 content = extract_from_pdf(pdf_file)
                 template = get_listino_parser(pdf_file.name, content, self.knowledge_file)
                 if template is None:
-                    self.log.write(pdf_file.name, tipo='Errore', desc='Template non trovato')
+                    self.log.write(pdf_file=pdf_file.name, tipo='Errore', desc='Template non trovato')
                     continue
                 data = template.parse(content)
                 data['filename'] = pdf_file.name
