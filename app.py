@@ -9,7 +9,9 @@ app = FastAPI()
 
 # Configurazione della cartella di upload
 UPLOAD_FOLDER = "/tmp/uploads"
+LOG_FOLDER = "/tmp/logs"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(LOG_FOLDER, exist_ok=True)
 
 # Abilitazione CORS (opzionale, se vuoi permettere richieste da altre origini)
 app.add_middleware(
@@ -38,8 +40,8 @@ async def process_files(files: list[UploadFile] = File(...)):
         validator = CTEValidator(
             pdf_folder=upload_dir,
             xls_folder=upload_dir,
-            knowledge_file="knowledge_listini.yaml",
-            log_file_prefix=f"log_{session_id}_"
+            knowledge_file="knowledge/knowledge_listini.yaml",
+            log_file_prefix=f"{LOG_FOLDER}/log_{session_id}_"
         )
         # Esecuzione del validatore
         validator.run()
@@ -47,12 +49,12 @@ async def process_files(files: list[UploadFile] = File(...)):
         return JSONResponse(status_code=500, content={"error": str(e)})
     
     # Recupero del file di log generato
-    log_file = [f for f in os.listdir(upload_dir) if f.startswith(f"log_{session_id}_")]
+    log_file = [f for f in os.listdir(LOG_FOLDER) if f.startswith(f"log_{session_id}_")]
     if not log_file:
         raise HTTPException(status_code=500, detail="Log file not generated")
     
     # Lettura del contenuto del log
-    log_path = os.path.join(upload_dir, log_file[0])
+    log_path = os.path.join(LOG_FOLDER, log_file[0])
     with open(log_path, 'r') as f:
         log_content = f.read()
     
