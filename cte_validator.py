@@ -1,4 +1,16 @@
 from pathlib import Path
+import csv
+import datetime
+from pathlib import Path
+from pdf_utils import extract_from_pdf
+from excel_utils import extract_from_excel
+from parsers import get_listino_parser
+
+class Log:
+    def __init__(self, filename):
+        self.filename = filename
+        self.write('File pdf', 'File xls', 'Listino', 'Tipo', 'Descrizione')
+
 class CTEValidator:
     def __init__(self, pdf_folder, xls_folder, knowledge_file, log_file_prefix):
         self.pdf_folder = Path(pdf_folder)
@@ -6,6 +18,12 @@ class CTEValidator:
         self.knowledge_file = knowledge_file
         self.log = Log(f"{log_file_prefix}{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.csv")
 
+
+    def write(self, pdf_file=None, xls_file=None, listino=None, tipo=None, desc=None):
+        with open(self.filename, 'a', newline='') as f:
+            writer = csv.writer(f, delimiter=';')
+            writer.writerow((pdf_file, xls_file, listino, tipo, desc))
+    
     def process_pdfs(self):
         pdf_data = {}
         for pdf_file in self.pdf_folder.rglob("*.pdf"):
