@@ -1,12 +1,9 @@
-# cte_validator.py
-
 import csv
 import datetime
 from pathlib import Path
 from pdf_utils import extract_from_pdf
 from excel_utils import extract_from_excel
 from parsers import get_listino_parser
-import yaml
 
 class Log:
     def __init__(self, filename):
@@ -18,16 +15,13 @@ class Log:
             writer = csv.writer(f, delimiter=';')
             writer.writerow((pdf_file, xls_file, listino, tipo, desc))
 
+
 class CTEValidator:
     def __init__(self, pdf_folder, xls_folder, knowledge_file, log_file_prefix):
         self.pdf_folder = Path(pdf_folder)
         self.xls_folder = Path(xls_folder)
-        self.knowledge = self.load_knowledge(knowledge_file)
+        self.knowledge_file = knowledge_file
         self.log = Log(f"{log_file_prefix}{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.csv")
-
-    def load_knowledge(self, file_path):
-        with open(file_path, 'r', encoding='utf-8') as f:
-            return yaml.safe_load(f)
 
     def process_pdfs(self):
         pdf_data = {}
@@ -35,11 +29,11 @@ class CTEValidator:
             try:
                 print(f"Processing {pdf_file.name}...")
                 content = extract_from_pdf(pdf_file)
-                parser = get_listino_parser(pdf_file.name, content, self.knowledge)
-                if parser is None:
+                template = get_listino_parser(pdf_file.name, content, self.knowledge_file)
+                if template is None:
                     self.log.write(pdf_file.name, tipo='Errore', desc='Template non trovato')
                     continue
-                data = parser.parse(content)
+                data = template.parse(content)
                 data['filename'] = pdf_file.name
                 pdf_data[data['Codice Listino']] = data
                 self.log.write(pdf_file=pdf_file.name, tipo='Elaborazione', desc='Processato con successo')
@@ -47,18 +41,6 @@ class CTEValidator:
                 self.log.write(pdf_file=pdf_file.name, tipo='Errore', desc=str(e))
         return pdf_data
 
-    def process_excels(self):
-        xls_data = {}
-        for xls_file in self.xls_folder.rglob("*.xlsx"):
-            try:
-                print(f"Processing {xls_file.name}...")
-                data = extract_from_excel(xls_file)
-                for entry in data:
-                    xls_data[entry["Codice Listino"]] = entry
-                self.log.write(xls_file=xls_file.name, tipo='Elaborazione', desc='Processato con successo')
-            except Exception as e:
-                self.log.write(xls_file=xls_file.name, tipo='Errore', desc=str(e))
-        return xls_data
 
     def run(self):
         pdf_data = self.process_pdfs()
