@@ -1,3 +1,4 @@
+from pathlib import Path
 class CTEValidator:
     def __init__(self, pdf_folder, xls_folder, knowledge_file, log_file_prefix):
         self.pdf_folder = Path(pdf_folder)
