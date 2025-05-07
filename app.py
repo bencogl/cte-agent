@@ -8,7 +8,7 @@ from cte_validator import CTEValidator
 app = FastAPI()
 
 # Configurazione della cartella di upload
-UPLOAD_FOLDER = "/app/uploads"
+UPLOAD_FOLDER = "/tmp/uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Abilitazione CORS (opzionale, se vuoi permettere richieste da altre origini)
