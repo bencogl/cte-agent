@@ -58,17 +58,27 @@ class CTEValidator:
         return pdf_data
 
     def process_excels(self):
-        xls_data = {}
-        for xls_file in self.xls_folder.rglob("*.xlsx"):
-            try:
-                print(f"Processing {xls_file.name}...")
-                data = extract_from_excel(xls_file)
-                data['filename'] = xls_file.name
-                xls_data[data['Codice Listino']] = data
-                self.log.write(xls_file=xls_file.name, tipo='Elaborazione', desc='Processato con successo')
-            except Exception as e:
-                self.log.write(xls_file=xls_file.name, tipo='Errore', desc=str(e))
-        return xls_data
+    xls_data = {}
+    for xls_file in self.xls_folder.rglob("*.xlsx"):
+        try:
+            print(f"Processing {xls_file.name}...")
+            data = extract_from_excel(xls_file)
+            
+            # Verifica che data sia un dizionario
+            if not isinstance(data, dict):
+                raise ValueError(f"Formato non valido per {xls_file.name}, atteso un dizionario")
+            
+            # Verifica che esista la chiave 'Codice Listino'
+            if 'Codice Listino' not in data:
+                raise ValueError(f"Il file {xls_file.name} non contiene 'Codice Listino'")
+            
+            data['filename'] = xls_file.name
+            xls_data[data['Codice Listino']] = data
+            self.log.write(xls_file=xls_file.name, tipo='Elaborazione', desc='Processato con successo')
+        except Exception as e:
+            self.log.write(xls_file=xls_file.name, tipo='Errore', desc=str(e))
+    return xls_data
+
 
     def run(self):
         pdf_data = self.process_pdfs()
