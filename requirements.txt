@@ -1,5 +1,4 @@
-fastapi
-uvicorn
-pypdf
-openpyxl
-python-multipart
+flask==2.3.3
+pypdf==3.15.0
+openpyxl==3.1.2
+PyYAML==6.0.1
