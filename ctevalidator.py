@@ -1,17 +1,20 @@
 import csv
 import datetime
 import sys
-
 from collections import Counter
 from decimal import Decimal as D
 from itertools import groupby
 from pathlib import Path
-
 from openpyxl import load_workbook
 from pypdf import PdfReader
+from fastapi import FastAPI, UploadFile, File
+from tempfile import NamedTemporaryFile
+import os
 
 from rules import *
 from natural_language_formatter import format_differences
+
+app = FastAPI()
 
 input_dir = Path().absolute() / 'INPUT'
 
@@ -25,42 +28,44 @@ def extractFromPdf(filename):
     reader = PdfReader(filename)
     return [p.extract_text().splitlines() for p in reader.pages]
 
-def validate_files():
+def validate_files(pdf_path, xlsx_path):
     '''
     FASE 1: Analisi CTE in pdf
     '''
     g001 = []
-    pdf_files = input_dir.rglob('**/*.pdf')
     pdf_data = {}
 
-    for pdf_file in pdf_files:
-        try:
-            fulltext = extractFromPdf(pdf_file)
-            template = getInterpreter(pdf_file.name, fulltext)
-            if template is None:
-                pdf_data[pdf_file.name] = "missing_template"
-                continue
-            content = template(fulltext)
-            g001.extend([[pdf_file.name, template.__name__, c] for c in content])
-        except Exception as e:
-            pdf_data[pdf_file.name] = f"error: {str(e)}"
+    try:
+        fulltext = extractFromPdf(pdf_path)
+        template = getInterpreter(pdf_path, fulltext)
+        if template is None:
+            return format_differences({"Errore": f"Template non trovato per il PDF: {pdf_path}"})
+        
+        content = template(fulltext)
+        g001.extend([[pdf_path, template.__name__, c] for c in content])
+    except Exception as e:
+        return format_differences({"Errore": f"Errore nell'analisi del PDF {pdf_path}: {str(e)}"})
 
-    # Formattazione corretta
-    def f002(filename, template, data):
+    g002 = []
+    for filename, template, data in g001:
         pricelist = data.get('Codice Listino', None)
         pricing = {x: y for x, y in data.items() if x not in ['Nome Listino', 'Codice Offerta']}
-        other = {'pdf': filename, 'template': template, 'Nome Listino': data.get('Nome Listino', None), 'Codice Offerta': data.get('Codice Offerta', None)}
-        return pricelist, pricing, other 
-
-    g002 = [f002(*x) for x in g001]
+        other = {
+            'pdf': filename,
+            'template': template,
+            'Nome Listino': data.get('Nome Listino', None),
+            'Codice Offerta': data.get('Codice Offerta', None)
+        }
+        g002.append((pricelist, pricing, other))
 
     frequency = Counter(l for l, p, o in g002)
 
+    pdf_data = {}
     for l, p, o in g002:
         if frequency[l] > 1:
             pdf_data[l] = "duplicate"
         else:
-            pdf_data[l] = (p, o)         
+            pdf_data[l] = (p, o)
 
     '''
     FASE 2: Tracciati listini in xls 
@@ -68,20 +73,18 @@ def validate_files():
     full_data = []
     xls_data = {}
 
-    xls_files = input_dir.rglob('*.xlsx')
-    for xls_file in xls_files:
-        try:
-            wb = load_workbook(xls_file, data_only=True)
-            wss = [x for x in wb.worksheets if x['A1'].value == 'Codice prodotto']
-            datasheets = [list(ws.iter_rows(min_row=2, values_only=True)) for ws in wss]
-            full_data.extend([(xls_file.name, ) + y for x in datasheets for y in x])
-        except Exception as e:
-            xls_data[xls_file.name] = f"error: {str(e)}"
+    try:
+        wb = load_workbook(xlsx_path, data_only=True)
+        wss = [x for x in wb.worksheets if x['A1'].value == 'Codice prodotto']
+        datasheets = [list(ws.iter_rows(min_row=2, values_only=True)) for ws in wss]
+        full_data.extend([(xlsx_path, ) + y for x in datasheets for y in x])
+    except Exception as e:
+        return format_differences({"Errore": f"Errore nell'analisi dell'Excel {xlsx_path}: {str(e)}"})
 
-    g005 = groupby(full_data, lambda x: (x[0], x[3])) #filename e listino
+    g005 = groupby(full_data, lambda x: (x[0], x[3])) # filename e listino
     g006 = ((k, v) for k, v in g005 if k[1] is not None and k[1] != '')
 
-    def f007(k, v):
+    for k, v in g006:
         try:
             price_name = k[1]
             other = {'xls': k[0]}
@@ -97,19 +100,9 @@ def validate_files():
                     p[x[2] + '|' + x[5]] = D(str(x[6]))            
                 if x[7] is not None:
                     p['Percentuale prezzo fisso'] = D(str(x[7]))
-            return price_name, p, other
+            xls_data[price_name] = (p, other)
         except Exception as e:
-            return f"error: {str(e)}"
-
-    g007 = [f007(k, v) for k, v in g006]
-
-    frequency = Counter(l for l, p, o in g007 if isinstance(l, str))
-    for l, p, o in g007:
-        if isinstance(l, str):
-            if frequency[l] > 1:
-                xls_data[l] = "duplicate"
-            else:
-                xls_data[l] = (p, o)         
+            return format_differences({"Errore": f"Errore nel parsing del listino {price_name} in {xlsx_path}: {str(e)}"})
 
     '''
     FASE 3: Analisi differenze 
@@ -129,3 +122,21 @@ def validate_files():
                 diffs[x] = diff
 
     return format_differences(diffs)
+
+@app.post("/compare")
+async def compare_files(pdf: UploadFile = File(...), xlsx: UploadFile = File(...)):
+    try:
+        # Salva temporaneamente i file caricati
+        with NamedTemporaryFile(delete=False) as tmp_pdf, NamedTemporaryFile(delete=False) as tmp_xlsx:
+            tmp_pdf.write(await pdf.read())
+            tmp_xlsx.write(await xlsx.read())
+
+        # Esegui la validazione
+        result_text = validate_files(tmp_pdf.name, tmp_xlsx.name)
+
+        # Restituisci il risultato
+        return {"response": result_text}
+
+    except Exception as e:
+        # Gestione errori generali
+        return {"response": f"❌ Errore interno: {str(e)}"}
