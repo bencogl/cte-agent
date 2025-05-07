@@ -1,0 +1,139 @@
+listini:
+  - codice: CL3PUNHYB
+    descrizione: "Listino 100% indicizzato"
+    riconoscimento:
+      nome_file: ["CL3PUNHYB"]
+      pattern_contenuto: ["100% indicizzato"]
+    campi:
+      - nome: Codice Listino
+        posizione: [0, -1]
+      - nome: Prodotto
+        valore_fisso: "CL3PUNHYB"
+      - nome: Data fine vendibilità
+        posizione: [0, -2]
+      - nome: Codice Offerta
+        posizione: [2, -2]
+      - nome: Prezzo Fisso percentuale
+        valore_fisso: 0
+      - nome: Percentuale prezzo fisso
+        valore_fisso: 0
+      - nome: Fee percentuale senza perdite
+        posizione: [0, -7]
+      - nome: Fee Listino
+        posizione: [0, -6]
+
+  - codice: IMPHYBGAS_F1
+    descrizione: "Listino gas fisso"
+    riconoscimento:
+      nome_file: ["IMPHYBGAS"]
+      pattern_contenuto: ["prezzo fisso"]
+    campi:
+      - nome: Codice Listino
+        posizione: [0, -1]
+      - nome: Prodotto
+        valore_fisso: "IMPHYBGAS"
+      - nome: Data fine vendibilità
+        posizione: [0, -2]
+      - nome: Codice Offerta
+        posizione: [2, -2]
+      - nome: Prezzo Gas Percentuale
+        posizione: [0, -6]
+      - nome: Percentuale prezzo fisso
+        valore_fisso: 100
+      - nome: Fee Gas Listino
+        posizione: [0, -5]
+      - nome: QVD Fissa Listino
+        formula: "to_num(content[1][-5]) / 12"
+
+  - codice: IMPHYBGAS_V1
+    descrizione: "Listino gas variabile"
+    riconoscimento:
+      nome_file: ["IMPHYBGAS"]
+      pattern_contenuto: ["Prezzo PSV + Fee"]
+    campi:
+      - nome: Codice Listino
+        posizione: [0, -1]
+      - nome: Prodotto
+        valore_fisso: "IMPHYBGAS"
+      - nome: Data fine vendibilità
+        posizione: [0, -10]
+      - nome: Codice Offerta
+        posizione: [1, -2]
+      - nome: Prezzo Gas Percentuale
+        valore_fisso: 0
+      - nome: Percentuale prezzo fisso
+        valore_fisso: 0
+      - nome: Fee Gas Percentuale
+        posizione: [0, -7]
+      - nome: Fee Gas Listino
+        posizione: [0, -6]
+      - nome: QVD Fissa Listino
+        posizione: [0, -5]
+
+  - codice: NELFIXHYB_V1
+    descrizione: "Listino luce fissa ibrida"
+    riconoscimento:
+      nome_file: ["NELFIXHYB"]
+      pattern_contenuto: ["fisso", "ibrido"]
+    campi:
+      - nome: Codice Listino
+        posizione: [1, -1]
+      - nome: Prodotto
+        valore_fisso: "NELFIXHYB"
+      - nome: Data fine vendibilità
+        posizione: [1, -15]
+      - nome: Codice Offerta
+        posizione: [3, -1]
+      - nome: Prezzo Fisso percentuale
+        posizione: [1, -14]
+      - nome: Percentuale prezzo fisso
+        valore_fisso: 100
+      - nome: Fee Primo Anno
+        valore_fisso: 0
+      - nome: PCV Fissa Listino
+        posizione: [1, -11]
+      - nome: FeeLuceListino perdite incluse
+        posizione: [1, -2]
+
+  - codice: OLxAFIX011119
+    descrizione: "Listino OLxAFIX"
+    riconoscimento:
+      nome_file: ["OL1AFIX", "OL2AFIX"]
+    campi:
+      - nome: Codice Listino
+        posizione: [0, -17]
+      - nome: Prodotto
+        valore_fisso: "OL1AFIX011119"
+      - nome: Data fine vendibilità
+        posizione: [0, -1]
+      - nome: Codice Offerta
+        posizione: [2, -3]
+      - nome: Prezzo Base FASCE Listino|F1
+        posizione: [0, -16]
+      - nome: Prezzo Base FASCE Listino|F2
+        posizione: [0, -15]
+      - nome: Prezzo Base FASCE Listino|F3
+        posizione: [0, -14]
+      - nome: Fee Listino
+        posizione: [0, -8]
+
+  - codice: NELVAR
+    descrizione: "Listino a prezzo variabile"
+    riconoscimento:
+      nome_file: ["NELVAR"]
+      pattern_contenuto: ["variabile"]
+    campi:
+      - nome: Codice Listino
+        posizione: [1, -1]
+      - nome: Prodotto
+        valore_fisso: "NELVAR"
+      - nome: Data fine vendibilità
+        posizione: [1, -14]
+      - nome: Codice Offerta
+        posizione: [3, -1]
+      - nome: PCV Fissa Listino
+        posizione: [1, -9]
+      - nome: Fee Listino PrimoAnno
+        posizione: [1, -11]
+      - nome: FeeLuceListino perdite incluse
+        posizione: [1, -2]
