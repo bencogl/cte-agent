@@ -3,10 +3,11 @@ from decimal import Decimal as D
 def to_num(s):
     return D(s.replace('.', '').replace(',', '.'))
 
-def get_listino_parser(filename, content, knowledge):
-    for listino in knowledge['listini']:
-        if any(marker in filename for marker in listino['riconoscimento']['nome_file']):
-            return ListinoParser(listino)
+def get_listino_parser(filename, content, knowledge_file="knowledge/knowledge_listini.yaml"):
+    templates = load_listino_templates(knowledge_file)
+    for template in templates:
+        if template.match(filename, content):
+            return template
     return None
 
 class ListinoParser:
