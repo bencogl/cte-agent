@@ -1,64 +1,36 @@
-from fastapi import FastAPI, HTTPException
-from utils.file_utils import list_input_files
-from parsers.pdf_parser import ai_parse_pdf
-from parsers.xls_parser import extract_xls_data
+# app.py
+from fastapi import FastAPI, UploadFile, File, HTTPException
+from parsers.pdf_parser import ai_parse_pdf_bytes
+from parsers.xls_parser import extract_xls_data_bytes
 from comparator.compare import compare_listini
 from comparator.report import generate_report
 
 app = FastAPI()
 
-@app.get("/list_files")
-def api_list_files():
-    """
-    Restituisce le liste di file PDF e XLSX presenti nella cartella di input.
-    """
-    return list_input_files()
+@app.get("/")
+def root():
+    return {"status": "ok"}
 
 @app.post("/extract_pdf_ai")
-def api_extract_pdf(body: dict):
-    """
-    Estrae i dati da un PDF utilizzando l'IA.
-    Body: { "path": "percorso/del/file.pdf" }
-    """
-    path = body.get("path")
-    if not path:
-        raise HTTPException(status_code=400, detail="Missing 'path' in request body")
-    return ai_parse_pdf(path)
+async def api_extract_pdf_ai(file: UploadFile = File(...)):
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(400, "Devi caricare un PDF")
+    content = await file.read()
+    return ai_parse_pdf_bytes(content)
 
 @app.post("/extract_xls")
-def api_extract_xls(body: dict):
-    """
-    Estrae i dati da un file Excel.
-    Body: { "path": "percorso/del/file.xlsx" }
-    """
-    path = body.get("path")
-    if not path:
-        raise HTTPException(status_code=400, detail="Missing 'path' in request body")
-    return extract_xls_data(path)
+async def api_extract_xls(file: UploadFile = File(...)):
+    if not (file.filename.lower().endswith(".xls") or file.filename.lower().endswith(".xlsx")):
+        raise HTTPException(400, "Devi caricare un file Excel")
+    content = await file.read()
+    return extract_xls_data_bytes(content)
 
 @app.post("/compare")
-def api_compare(body: dict):
-    """
-    Confronta i dati estratti da PDF e XLSX.
-    Body: { "pdf": {...}, "xls": {...} }
-    """
-    pdf = body.get("pdf")
-    xls = body.get("xls")
-    if pdf is None or xls is None:
-        raise HTTPException(status_code=400, detail="Missing 'pdf' or 'xls' in request body")
-    return compare_listini(pdf, xls)
+async def api_compare(body: dict):
+    # body = { "pdf": {...}, "xls": {...} }
+    return compare_listini(body["pdf"], body["xls"])
 
 @app.post("/report")
-def api_report(body: dict):
-    """
-    Genera un report di sintesi dai risultati di confronto.
-    Body: { "results": [...] }
-    """
-    results = body.get("results")
-    if results is None:
-        raise HTTPException(status_code=400, detail="Missing 'results' in request body")
-    return generate_report(results)
-
-@app.get("/")
-def read_root():
-    return {"message": "Listini Validator Agent is running"}
+async def api_report(body: dict):
+    # body = { "results": [ {status, ...}, … ] }
+    return generate_report(body["results"])
