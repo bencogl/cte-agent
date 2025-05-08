@@ -11,13 +11,20 @@ def to_num(s):
 
 def get_listino_parser(filename, content, knowledge_file):
     templates = load_listino_templates(knowledge_file)
+    # Assicuriamoci che `content` sia sempre una stringa per re.search()
+    if isinstance(content, list):
+        content = "\n".join(str(line) for line in content)
     
     for template in templates:
-        # Verifica se il nome del file corrisponde a uno dei pattern
-        for nome_file in template.get("riconoscimento", {}).get("nome_file", []):
-            if nome_file in filename:
-                # Verifica se uno dei pattern di contenuto corrisponde
-                patterns = template.get("riconoscimento", {}).get("pattern_contenuto", [])
+       # Verifica se il nome del file corrisponde a uno dei pattern
+         for nome_file in template.get("riconoscimento", {}).get("nome_file", []):
+             if nome_file in filename:
+                 # Verifica se uno dei pattern di contenuto corrisponde
+                 patterns = template.get("riconoscimento", {}).get("pattern_contenuto", [])
+                 
+                 # Se qualcuno ha lasciato un pattern vuoto, usiamo '.*'
+                 if isinstance(patterns, str):
+                     patterns = [patterns]
                 
                 # Assicurati che pattern_contenuto sia una lista
                 if isinstance(patterns, str):
