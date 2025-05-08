@@ -1,10 +1,17 @@
 # app.py
-from fastapi import FastAPI, UploadFile, File, HTTPException
+import os
+import requests
+import openai
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 from parsers.pdf_parser import ai_parse_pdf_bytes
 from parsers.xls_parser import extract_xls_data_bytes
 from comparator.compare import compare_listini
 from comparator.report import generate_report
-from pydantic import BaseModel
+from dotenv import load_dotenv
+
+load_dotenv()  # per leggere OPENAI_API_KEY da .env
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = FastAPI()
 
@@ -12,33 +19,70 @@ app = FastAPI()
 def root():
     return {"status": "ok"}
 
+#
+# Payload che arriva da Custom GPT: contiene il file-ID
+#
+class FileIdPayload(BaseModel):
+    file: str
+
 @app.post("/extract_pdf_ai")
-async def api_extract_pdf_ai(file: UploadFile = File(...)):
-    # Verifica che sia un PDF
-    if file.content_type != "application/pdf":
-        raise HTTPException(status_code=400, detail="Devi caricare un file PDF valido")
-    content = await file.read()
+async def api_extract_pdf_ai(payload: FileIdPayload):
+    file_id = payload.file
+    if not file_id.startswith("file-"):
+        raise HTTPException(status_code=400, detail="Parametro 'file' non valido: deve essere un file ID")
+    # 1) Recupera la metadata del file da OpenAI
     try:
-        data = ai_parse_pdf_bytes(content)
+        file_meta = openai.File.retrieve(file_id)
+        download_url = file_meta.get("url")
+        if not download_url:
+            raise ValueError("Nessuna URL di download trovata per il file")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Errore nell’AI parser: {e}")
+        raise HTTPException(status_code=500, detail=f"Errore retrieving file metadata: {e}")
+
+    # 2) Scarica il contenuto binario del PDF
+    try:
+        resp = requests.get(download_url, headers={"Authorization": f"Bearer {openai.api_key}"})
+        resp.raise_for_status()
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Errore scaricando il file da OpenAI: {e}")
+
+    # 3) Passa i bytes al parser AI
+    try:
+        data = ai_parse_pdf_bytes(resp.content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Errore nel parsing PDF: {e}")
+
     return {"data": data}
+
 
 @app.post("/extract_xls")
-async def api_extract_xls(file: UploadFile = File(...)):
-    # Verifica che sia un Excel (.xls o .xlsx)
-    if file.content_type not in (
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "application/vnd.ms-excel"
-    ):
-        raise HTTPException(status_code=400, detail="Devi caricare un file Excel (.xls o .xlsx)")
-    content = await file.read()
+async def api_extract_xls(payload: FileIdPayload):
+    file_id = payload.file
+    if not file_id.startswith("file-"):
+        raise HTTPException(status_code=400, detail="Parametro 'file' non valido: deve essere un file ID")
+    # metadata + download come sopra
     try:
-        data = extract_xls_data_bytes(content)
+        file_meta = openai.File.retrieve(file_id)
+        download_url = file_meta.get("url")
+        if not download_url:
+            raise ValueError("Nessuna URL di download trovata per il file")
+        resp = requests.get(download_url, headers={"Authorization": f"Bearer {openai.api_key}"})
+        resp.raise_for_status()
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Errore nel parser Excel: {e}")
+        raise HTTPException(status_code=502, detail=f"Errore scaricando il file da OpenAI: {e}")
+
+    # parsing Excel
+    try:
+        data = extract_xls_data_bytes(resp.content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Errore nel parsing Excel: {e}")
+
     return {"data": data}
 
+
+#
+# Confronto e report come prima
+#
 class CompareRequest(BaseModel):
     pdf: dict
     xls: dict
@@ -46,10 +90,9 @@ class CompareRequest(BaseModel):
 @app.post("/compare")
 async def api_compare(req: CompareRequest):
     try:
-        result = compare_listini(req.pdf, req.xls)
+        return compare_listini(req.pdf, req.xls)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Errore nel confronto: {e}")
-    return result
 
 class ReportRequest(BaseModel):
     results: list
@@ -57,7 +100,6 @@ class ReportRequest(BaseModel):
 @app.post("/report")
 async def api_report(req: ReportRequest):
     try:
-        report = generate_report(req.results)
+        return generate_report(req.results)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Errore nella generazione report: {e}")
-    return report
